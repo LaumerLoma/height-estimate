@@ -2,7 +2,7 @@
 
 A dependency-free, publishable web calculator for the Isenau glider case study. It includes an independent JavaScript calculation module, optional terrain refresh, a second-mast cross-check, bounded sensitivity analysis, source links, and JSON export.
 
-The calculator itself establishes no glider height until mast shadows or a solar angle are entered. The ephemeris-based estimate and the full derivation are in [`../paper/height-estimate.pdf`](../paper/height-estimate.pdf). Rough mast-height estimates are prefilled from the supplied March 2011 Street View panoramas: **Mast 1 ≈9 m; Mast 2 ≈10 m**, each with a working **±3 m** sensitivity bound. Mast shadow lengths and their actual endpoint elevations remain blank. Matching acquisition times are not yet verified.
+This calculator implements the basic shadow formula with worst-case bounds. It does **not** model the camera's relief displacement of the airborne glider, which here biases the result about 30% low. The full estimate (180 ± 3 m) and its derivation are in [`../paper/height-estimate.pdf`](../paper/height-estimate.pdf). To reproduce that estimate here, enter the glider position at the moment it cast the imaged shadow, corrected for camera displacement and for its motion at 30 m/s: (2582427.72, 1135117.71), with ground elevation 1928.8 m, use the image-measured shadow (2582416.12, 1135210.68; ground 1905.9 m), and set the solar elevation to 65.19°. Rough mast-height estimates are prefilled from the supplied March 2011 Street View panoramas: **Mast 1 ≈9 m; Mast 2 ≈10 m**, each with a working **±3 m** sensitivity bound. Mast shadow lengths and their actual endpoint elevations remain blank. Matching acquisition times are not yet verified.
 
 ## Run locally
 

@@ -1,0 +1,50 @@
+{
+  "sun": {
+    "minutes_after_1118": 7.15,
+    "elevation": 65.19,
+    "azimuth": 173.41
+  },
+  "naive_pins_formula": 142.5,
+  "central_static": {
+    "h": 184.14,
+    "Z": 2112.98,
+    "E": 2582425.79,
+    "N": 1135115.43,
+    "zg": 1928.83,
+    "zs": 1905.9,
+    "zo": 1927.54,
+    "shift": 19.97,
+    "cross": 1.32,
+    "D_true": 95.74
+  },
+  "central_moving_30ms": {
+    "h": 179.77,
+    "Z": 2108.57,
+    "E": 2582425.79,
+    "N": 1135115.91,
+    "zg": 1928.81,
+    "zs": 1905.9,
+    "zo": 1927.54,
+    "shift": 19.49,
+    "cross": -0.85,
+    "D_true": 95.26
+  },
+  "shadow_direction_time_min_after_1118": 8.59,
+  "error_budget_sd_m": {
+    "time": 0.19,
+    "image": 2.64,
+    "camera": 0.92,
+    "motion": 1.49,
+    "terrain": 0.88
+  },
+  "monte_carlo": {
+    "n": 20000,
+    "p2.5": 173.3,
+    "p16": 176.5,
+    "median": 179.9,
+    "p84": 183.1,
+    "p97.5": 186.2,
+    "mean": 179.8,
+    "sd": 3.3
+  }
+}

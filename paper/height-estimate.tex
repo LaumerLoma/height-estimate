@@ -5,6 +5,7 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{siunitx}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
@@ -14,12 +15,12 @@
 \hypersetup{
   pdftitle={Estimating the Height of a Glider from its Shadow in an Aerial Orthophoto},
   pdfauthor={LaumerLoma},
-  pdfsubject={Shadow geometry, solar ephemeris and interval error bounds}
+  pdfsubject={Shadow geometry, pushbroom relief displacement, solar ephemeris and uncertainty}
 }
 \setlist{nosep}
+\emergencystretch=3em
+\graphicspath{{../docs/}{./}}
 
-\newtheorem{proposition}{Proposition}
-\newcommand{\dd}{\,\mathrm{d}}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \title{Estimating the Height of a Glider from its Shadow\\in an Aerial Orthophoto}
@@ -29,515 +30,486 @@
 \begin{document}
 \maketitle
 
+\begin{center}
+\includegraphics[width=\textwidth]{banner.jpg}\\[2pt]
+{\small The glider over Isenau, Switzerland, in SWISSIMAGE (14 July 2023; \SI{220}{m} $\times$ \SI{52}{m}, north up). Imagery \textcopyright\ swisstopo.}
+\end{center}
+
 \begin{abstract}
-A glider and its shadow both appear in a SWISSIMAGE orthophoto tile near
-Isenau, Switzerland. This note sets out the geometry and mathematics used to turn
-that observation into a height above ground. The method needs three inputs: the
-horizontal separation between the glider and its shadow, the terrain elevations
-beneath each, and the solar elevation angle.
-The solar angle is obtained in two independent ways:
-by calibration against vertical reference masts of estimated height, and from a
-solar ephemeris evaluated at the documented flight date. Uncertainty is carried
-through with worst-case interval arithmetic, which is exact for the monotone formulas
-involved. We also quantify the main error that the intervals do not cover:
-orthophoto displacement of an elevated object. Taking the ephemeris route and the
-glider's apparent position, the central estimate is about \SI{142}{m} above the
-terrain beneath the glider. This figure is conditional on assumptions stated
-explicitly below, and the uncorrected orthophoto displacement could shift it by
-tens of metres.
+A glider and its shadow both appear in the Swiss national orthophoto mosaic
+SWISSIMAGE. This note derives the glider's height above the ground from that
+single image and explains each step. The basic shadow formula gives
+\SI{142.5}{m}, but it is biased. An orthophoto draws an airborne object
+where the camera ray through it meets the ground, not where the object is. We reconstruct
+the exposure geometry from public flight metadata: a pushbroom camera with a \ang{45.3} field
+of view flying at \SI{6393}{m}, \SI{481}{m} to the side of the glider. The orthophoto
+therefore draws the glider about \SI{20}{m} too far north, almost straight towards its own shadow. We
+also date the exposure to 11:25~UTC from the survey flight pattern and allow for the
+glider's own motion during the scan. The geometry then closes, and the estimate becomes
+\[
+  h = \SI{180 \pm 3}{m}\ \text{above the terrain beneath the glider}
+  \quad(95\,\%\text{ interval } \SIrange{173}{186}{m}).
+\]
+Two independent clocks agree: the shadow direction and the flight log date the
+exposure to within 1.5~minutes of each other.
 \end{abstract}
 
-\section{Problem and approach}
+\tableofcontents
 
-An orthophoto is an aerial image resampled onto a terrain model, so that every
-ground point appears at its map position. An object in the air, such as a
-glider, breaks this assumption twice. It casts a shadow some distance away on the
-ground, and the object itself is drawn at a position that is displaced by the
-projection. The shadow gives the height, and the displacement is the main thing
-that can spoil it.
+\section{The idea in one picture}
 
-The calculation has four steps:
+Sunlight arrives as parallel rays at a known elevation angle $\alpha$. The glider
+blocks one ray, and the shadow lands where that ray meets the hillside. If we know how far
+apart the glider and its shadow are horizontally ($D$), the height follows from a
+right-angled triangle, $D\tan\alpha$. A correction is needed because the hillside is not
+flat. That is all the shadow method is (Section~\ref{sec:shadow}).
+
+The difficulty is that we never see the glider's true horizontal position. The
+image is an \emph{orthophoto}, rectified so that everything \emph{on the ground}
+is at its map position. A glider \SI{180}{m} above the ground is not on the ground. The camera
+saw it slightly from the side, and the rectification projects it along the camera's line of sight onto the
+terrain (Figure~\ref{fig:relief}). Here that slides the glider about
+\SI{20}{m} towards its shadow, so the measured gap $D$ is too short. Section~\ref{sec:relief}
+recovers the camera position and removes that error. This single correction moves the
+answer from \SI{142}{m} to \SI{184}{m}. The remaining steps are refinements of a few metres.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lrl@{}}
+\toprule
+Step & $h$ (m) & Section \\
+\midrule
+Shadow formula, image positions taken at face value & 142.5 & \ref{sec:shadow} \\
++ camera relief displacement and terrain at the true position & 184.1 & \ref{sec:relief} \\
++ glider motion during the pushbroom scan (\SI{30}{m/s}) & 179.8 & \ref{sec:motion} \\
+Monte Carlo over all input uncertainties (median $\pm1\sigma$) & $179.9 \pm 3.3$ & \ref{sec:uncertainty} \\
+\bottomrule
+\end{tabular}
+\caption{How the estimate is built up.}
+\label{tab:steps}
+\end{table}
+
+\section{Data}\label{sec:data}
+
+\paragraph{Orthophoto.} SWISSIMAGE is swisstopo's national orthophoto mosaic. In this part of the
+Alps it is built from \SI{0.25}{m} ground-sample-distance image strips. The covering strip is
+\code{20230714\_1118\_12504}, flown on 14~July~2023. Its identifier encodes the
+start of acquisition, 11:18~UTC. Its footprint polygon, length (\SI{57.87}{km}) and start point are public
+(\code{data/imagery-acquisition.json}). The other eight strips flown that morning are also public
+(\code{data/flight-strips-2023-07-14.json}).
+
+\paragraph{Camera.} swisstopo flew a Leica ADS100 \emph{pushbroom} sensor. It does not take
+frames. Each colour band is recorded by a single line of \num{20000} pixels across the flight
+direction, and the image is built up line by line as the aircraft moves forward. The
+orthophoto uses the \emph{nadir} line group, which looks straight down along-track. The camera's
+SH120 head has a \SI{120}{mm} lens and a nadir field of view of \ang{45.2} across track. Its
+flying-height multiplier is \num{24000}:1, so \SI{0.25}{m} pixels correspond to
+\SI{6000}{m} above ground.
+
+\paragraph{Terrain.} Elevations come from swissALTI3D, obtained via the geo.admin.ch height service.
+Local grids around the glider (\SI{2.5}{m} spacing) and the shadow (\SI{2}{m}) are cached
+in \code{data/terrain-grids.json} and bilinearly interpolated. The hillside under the glider
+falls about \SI{30}{\degree} to the east and gently to the north.
+
+\paragraph{Frames.} Horizontal coordinates are in CH1903+/LV95 (EPSG:2056).
+Combining grid scale and height reduction, LV95 coordinate differences equal ground distances
+to within $3\times10^{-4}$, i.e.\ \SI{3}{cm} per \SI{100}{m}. Only height \emph{differences} enter the
+results, so the vertical datum cancels.
+
+\section{Measuring the image}\label{sec:image}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{fig-measurement.jpg}
+\caption{Left: the glider, \SI{40}{m} square, with its silhouette centroid (cross).
+Centre: the shadow area \SI{76}{m} north-north-west, contrast-stretched. Right: the glider
+silhouette, blurred by the solar disk, matched to the shadow (red outline). The tail and fuselage land on
+the darkest blob, and the north-west wing lies along the dark band.}
+\label{fig:measure}
+\end{figure}
+
+Both crops are fetched from the swisstopo WMS at \SI{5}{cm} per pixel, upsampled from the
+\SI{25}{cm} source (\code{analysis/measure\_image.py}).
+
+\paragraph{Glider.} The glider is the only large white object, and thresholding brightness
+and saturation isolates its silhouette. The centroid is at
+$(E',N') = (\num{2582425.79}, \num{1135135.40})$, within \SI{0.5}{m} of the original
+hand-placed pin. The silhouette spans \SI{17.8}{m}, consistent with an 18-metre-class glider.
+The T-tail is to the north-east, so the glider was heading about \ang{227} (south-west).
+
+\paragraph{Shadow.} The shadow is faint, and that is expected.
+The Sun's disk subtends \SI{9.3}{mrad}. From the glider--shadow distance along the ray, $(Z-z_s)/\sin\alpha\approx\SI{220}{m}$,
+every edge is therefore smeared over about \SI{2}{m}, more than twice the chord of the wing (about
+\SI{0.7}{m}). No point on the ground is fully shaded by the wing, so its shadow is a half-tone smudge. The
+wider fuselage and tail make the darkest blob. To locate it objectively, we
 \begin{enumerate}
-  \item Measure, in a common horizontal frame, the glider position and the matching
-        point of its shadow (Section~\ref{sec:geometry}).
-  \item Read the terrain elevation at both points (Section~\ref{sec:data}).
-  \item Determine the solar elevation angle $\alpha$, either from reference masts
-        (Section~\ref{sec:masts}) or from a solar ephemeris (Section~\ref{sec:ephemeris}).
-  \item Propagate the input bounds to a height interval
-        (Section~\ref{sec:uncertainty}) and assess what those bounds leave out
-        (Section~\ref{sec:systematic}).
+  \item turn the glider silhouette into a \emph{predicted} shadow: invert it and convolve it
+        with a disk of the penumbra width;
+  \item high-pass filter the shadow crop (subtract a \SI{3}{m} Gaussian blur) to remove
+        brightness gradients;
+  \item cross-correlate the two over all shifts, scales 0.85--1.15 and stretches along the sun
+        direction 1.0--1.35, which allow for slope foreshortening.
 \end{enumerate}
-The browser calculator in this repository implements steps 1--4 with mast
-calibration or a manually entered solar angle. The ephemeris numbers are reproduced
-by \code{paper/solar.mjs}.
+The best match (Figure~\ref{fig:measure}, right) has scale 0.97 and no stretch. Its peak stands
+5.8 standard deviations above the background correlation. It is stable for penumbra widths of
+1--\SI{2}{m}, and it puts the shadow's centroid at $(E_s,N_s)=(\num{2582416.12},\num{1135210.68})$.
+The correlation falls by one standard deviation within $\pm\SI{0.8}{m}$ along the sun direction.
+Along the wing axis it falls more slowly, within $\pm\SI{2}{m}$. We carry
+$\sigma=\SI{0.5}{m}$ and $\SI{1.2}{m}$ along those two directions.
 
-\section{Data and reference frames}\label{sec:data}
+Because the shadow is a parallel projection of the glider, the centroid of the shadow is the shadow of the
+glider's centroid. Matching centroids therefore pairs corresponding points.
 
-Horizontal coordinates are in CH1903+/LV95 (EPSG:2056), a conformal
-projection. Combining its grid scale with the reduction from about \SI{1.9}{km}
-elevation to the ellipsoid gives a factor within about $3\times10^{-4}$ of unity
-at Isenau. LV95 coordinate differences can therefore be treated as horizontal
-ground distances, with an error under \SI{3}{cm} over the \SI{76}{m} baseline used here.
-Elevations come from the swisstopo terrain-height service (swissALTI3D). Only
-differences between nearby elevations enter the formulas, so the vertical datum
-cancels as long as one is used throughout.
+\paragraph{Result.} The image separation is $D' = \SI{75.89}{m}$ at azimuth $\ang{352.7}$, with terrain
+$z_s = \SI{1905.9}{m}$ at the shadow and $z' = \SI{1927.5}{m}$ under the glider's image.
 
-The terrain model is bare-earth. Where vegetation, buildings or snow raise the
-surface that actually catches a shadow, the effective shadow elevation is higher
-than the model value. Section~\ref{sec:uncertainty} treats this as part of
-the terrain bound~$\varepsilon_z$.
-
-\section{Shadow geometry}\label{sec:geometry}
-
-\subsection{Parallel-ray model}
-
-At the scale involved (less than \SI{1}{km}), sunlight is modelled as a family of
-parallel straight rays with elevation $\alpha$ above the horizontal and azimuth
-$A_\odot$. Three effects are neglected:
-\begin{itemize}
-  \item The Sun's \ang{0.53} disk makes the shadow edge soft without moving its
-        centre; see Section~\ref{sec:systematic}.
-  \item Earth curvature contributes $D^2/2R\approx\SI{0.5}{mm}$ for
-        $D=\SI{76}{m}$ and $R=\SI{6371}{km}$.
-  \item Atmospheric refraction is below \ang{;;30} at $\alpha\approx\ang{65}$.
-\end{itemize}
-
-Let $P=(E_g,N_g,Z)$ be a point on the glider and $S=(E_s,N_s,z_s)$ the
-corresponding point of its shadow on the terrain. The ray through $P$ reaches
-the ground at $S$. Its horizontal projection runs from $(E_g,N_g)$ to $(E_s,N_s)$,
-and its vertical drop is $Z-z_s$, so
-\begin{equation}
-  \tan\alpha = \frac{Z - z_s}{D},\qquad
-  D = \sqrt{(E_s-E_g)^2 + (N_s-N_g)^2}.
-  \label{eq:ray}
-\end{equation}
-The shadow lies on the side away from the Sun, so its azimuth from the glider is
-\begin{equation}
-  A_{gs} = \operatorname{atan2}(E_s-E_g,\;N_s-N_g) \equiv A_\odot + \ang{180}
-  \pmod{\ang{360}}.
-  \label{eq:azimuth}
-\end{equation}
-Equation~\eqref{eq:azimuth} does not enter the height computation, but it is a
-useful independent consistency check (Section~\ref{sec:case}).
+\section{Shadow geometry}\label{sec:shadow}
 
 \begin{figure}[ht]
 \centering
 \begin{tikzpicture}[scale=1.0, >=Stealth]
-  % terrain
   \draw[thick, fill=black!6] (-0.5,1.6) -- (0,1.6) .. controls (2,1.5) and (4,0.6) .. (6.5,0.3) -- (7,0.25) -- (7,-0.3) -- (-0.5,-0.3) -- cycle;
-  % glider
   \coordinate (P) at (0,4.9);
   \coordinate (G) at (0,1.6);
   \coordinate (S) at (6.2,0.33);
   \fill (P) circle (2pt) node[above left] {$P$ (glider)};
-  \fill (S) circle (2pt) node[below right] {$S$ (shadow)};
+  \fill (S) circle (2pt) node[below right] {$S$};
   \draw[dashed] (P) -- (G) node[midway, left] {$h$};
   \fill (G) circle (1.5pt) node[above right] {$z_g$};
-  % sun ray
   \draw[->, thick, orange!80!black] ($(P)!-0.18!(S)$) -- (S);
   \node[orange!80!black, above right] at ($(P)!-0.15!(S)$) {sunlight};
-  % horizontal through S and vertical through P
   \draw[dotted] (-0.9,0.33) -- (S);
   \draw[decorate, decoration={brace, amplitude=5pt, mirror}] (0,0.05) -- (6.2,0.05) node[midway, below=6pt] {$D$};
-  \draw[dotted] (G) -- (0,0.33);
   \draw[dotted] (-0.9,1.6) -- (G);
   \draw[<->] (-0.7,0.33) -- (-0.7,1.6) node[midway, left] {$z_g - z_s$};
-  % angle
   \draw ($(S)+(-1.4,0)$) arc[start angle=180, end angle={180-36.4}, radius=1.4];
   \node at ($(S)+(-1.75,0.45)$) {$\alpha$};
 \end{tikzpicture}
-\caption{Vertical section along the sunlight direction. On sloping terrain the
-shadow falls lower than the ground beneath the glider ($z_s<z_g$). The terrain
-difference therefore has to be removed from the height obtained along the ray.}
+\caption{Vertical section along the sunlight. On a slope the shadow falls lower than the ground
+beneath the glider, and the terrain difference has to be removed.}
 \label{fig:section}
 \end{figure}
 
-\subsection{Height above ground}
-
-The height above the terrain directly beneath the glider is $h = Z - z_g$, where
-$z_g$ is the terrain elevation at $(E_g,N_g)$. Eliminating $Z$ with
-\eqref{eq:ray} gives the central formula
+Over a few hundred metres, sunlight is a family of parallel rays with elevation $\alpha$ and
+azimuth $A_\odot$. Earth curvature (\SI{1}{mm} over \SI{100}{m}) and refraction (below \ang{;;30}
+at $\alpha\approx\ang{65}$) are negligible. A glider point at height $Z$ and horizontal position
+$\mathbf g$ casts its shadow at $\mathbf s$ on terrain of height $z_s$, with
+\begin{equation}
+  Z - z_s = D\tan\alpha,\qquad D = \lVert\mathbf s-\mathbf g\rVert,\qquad
+  \operatorname{az}(\mathbf s-\mathbf g) = A_\odot + \ang{180}.
+  \label{eq:ray}
+\end{equation}
+The height above the ground directly beneath the glider is $h = Z - z_g$, so
 \begin{equation}
   \boxed{\,h = D\tan\alpha + z_s - z_g\,}
   \label{eq:height}
 \end{equation}
-The term $z_s - z_g$ is the terrain correction. A shadow that falls downhill
-($z_s<z_g$) would overstate the height if the correction were ignored, and one that
-falls uphill would understate it. On flat ground \eqref{eq:height} reduces to
-$h = D\tan\alpha$.
+Here the shadow falls about \SI{22}{m} downhill, so the correction $z_s-z_g$ is negative.
+With the image positions taken at face value ($\mathbf g = (E',N')$) and $\alpha=\ang{65.19}$
+(Section~\ref{sec:sun}), Equation~\eqref{eq:height} gives
+$h = 75.89\times2.1625 + 1905.9 - 1927.5 = \SI{142.5}{m}$.
+That is the \emph{naive} estimate. The next three sections correct its inputs.
 
-The height is referred to the terrain directly beneath the glider, which is what
-\emph{above ground level} means. If the height is wanted above some other reference,
-such as the shadow point or sea level, replace $z_g$ in \eqref{eq:height}
-with that reference.
+\paragraph{Sensitivities.} $\partial h/\partial D = \tan\alpha = 2.16$ and
+$\partial h/\partial\alpha = D\sec^2\alpha = \SI{7.5}{m}$ per degree.
+Under a high summer sun, horizontal errors are amplified more than twofold, and a degree of solar error costs
+several metres.
 
-\section{Solar elevation from reference masts}\label{sec:masts}
+\section{Exposure time and solar position}\label{sec:sun}
 
-\subsection{Calibration equation}
+\subsection{When was the glider photographed?}
 
-A vertical mast of height $H$, with base elevation $z_b$, casts its top's shadow
-at horizontal distance $L$ from the base, onto terrain at elevation $z_t$.
-Applying \eqref{eq:ray} to the mast top gives
+The strip ID gives only the start time. However, the nine strips flown that morning form a
+classic back-and-forth survey pattern, with alternate east- and westbound lines about \SI{2.2}{km} apart. The
+interval between consecutive start times is the line's length divided by the ground speed, plus a
+turn:
 \begin{equation}
-  \tan\alpha = \frac{H + z_b - z_t}{L}.
-  \label{eq:mast}
+  t_{k+1} - t_k = \frac{L_k}{V_{\text{dir}(k)}} + T_{\text{turn}} .
 \end{equation}
-Substituting \eqref{eq:mast} into \eqref{eq:height} gives a combined estimator,
-\begin{equation}
-  h = \frac{D}{L}\,(H + z_b - z_t) + z_s - z_g .
-  \label{eq:ratio}
-\end{equation}
-In \eqref{eq:ratio} the horizontal lengths enter only as the ratio $D/L$.
-A scale error common to both, such as a wrong image resolution, therefore
-cancels. This holds only if the mast and glider were imaged under the same sun.
-Rays are parallel only at a single instant, so the mast shadow and the glider shadow
-must come from the same exposure, or at least from exposures taken within minutes of
-each other. Tiles of the same mosaic year do not establish this.
+The start times are truncated to whole minutes. A least-squares fit with separate east- and
+westbound speeds, Monte-Carlo'd over the sub-minute truncation, gives the following
+(\code{analysis/fit\_camera.py}):
+\begin{itemize}
+  \item eastbound \SI{398}{km/h} (95\,\%: 326--508);
+  \item westbound \SI{349}{km/h} (305--410);
+  \item turn time \SI{4.2}{min}.
+\end{itemize}
+The difference between the two speeds is consistent with a wind. The glider lies \SI{44.13}{km} along the eastbound strip,
+which gives the exposure at
+\[
+  t = \text{11:18} + (7.15\pm0.91)\ \text{min} = \text{11:25:09 UTC} \pm \SI{55}{s}.
+\]
 
-The mast top must be a point vertically above the base used for $z_b$. A point on
-an offset crossarm needs its own horizontal projection. A second mast gives an
-independent value of $\alpha$. The calculator compares it with the first value
-and does not average the two. Averaging would hide a disagreement that may point to
-a wrong shadow identification or to different capture times.
+\subsection{Solar position}
 
-\subsection{Mast heights from ground photographs}\label{sec:streetview}
-
-No surveyed mast heights were available. Each height was reconstructed from a
-March~2011 ground panorama by elevation-angle triangulation.
-The camera stands at terrain elevation $z_c$ with lens height $\ell$ above it and
-horizontal distance $d$ from the mast. If the mast top is seen at angle $\beta$
-above the horizontal,
-\begin{equation}
-  H = z_c + \ell + d\tan\beta - z_b .
-  \label{eq:streetview}
-\end{equation}
+The Sun's position follows Meeus' low-precision algorithm (as in the NOAA solar calculator,
+accurate to about \ang{;1;}), implemented in \code{paper/solar.mjs}. In outline, the Sun's
+apparent longitude $\lambda$ gives its declination, $\sin\delta = \sin\varepsilon\sin\lambda$.
+The time, the equation of time and the longitude give the hour angle $H_\odot$. With latitude $\varphi$,
+\begin{align}
+  \sin\alpha &= \sin\varphi\sin\delta + \cos\varphi\cos\delta\cos H_\odot,\\
+  A_\odot &= \operatorname{atan2}\!\bigl(\sin H_\odot,\;
+             \cos H_\odot\sin\varphi - \tan\delta\cos\varphi\bigr) + \ang{180}.
+\end{align}
+At the glider ($\ang{46.3674}$\,N, $\ang{7.2103}$\,E), $\delta=\ang{21.68}$ and local
+solar noon is at 11:37~UTC.
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{@{}lrr@{}}
 \toprule
-Input & Mast 1 & Mast 2 \\
+UTC, 2023-07-14 & elevation $\alpha$ & azimuth $A_\odot$ \\
 \midrule
-Terrain at camera $z_c$ & \SI{1790.3}{m} & \SI{1776.1}{m} \\
-Assumed lens height $\ell$ & \SI{2.5}{m} & \SI{2.5}{m} \\
-Horizontal distance $d$ & \SI{24.75}{m} & \SI{40.84}{m} \\
-Top elevation angle $\beta$ & \ang{7.8} & \ang{17.4} \\
-Terrain at mast base $z_b$ & \SI{1787.2}{m} & \SI{1781.4}{m} \\
-\midrule
-$H$ from \eqref{eq:streetview} & \SI{8.99}{m} & \SI{10.00}{m} \\
-$\partial H/\partial\beta = d\sec^2\beta$ & \SI{0.44}{m/\degree} & \SI{0.78}{m/\degree} \\
-Working bound & $\pm\SI{3}{m}$ & $\pm\SI{3}{m}$ \\
+11:18 (strip start) & \ang{65.01} & \ang{169.49} \\
+11:25 (estimated exposure) & \ang{65.19} & \ang{173.41} \\
+11:37 (solar noon) & \ang{65.31} & \ang{179.98} \\
 \bottomrule
 \end{tabular}
-\caption{Street-View reconstruction of the mast heights. The lens height is an
-assumption: $\partial H/\partial\ell = 1$, so it passes one-for-one into $H$.
-The $\pm\SI{3}{m}$ figure is a working sensitivity bound, not a measured tolerance.}
-\label{tab:masts}
-\end{table}
-
-\subsection{How mast errors propagate}
-
-From \eqref{eq:ratio}, $\partial h/\partial H = D/L = \tan\alpha \cdot D/(H+z_b-z_t)$.
-Near $\alpha\approx\ang{65}$ a \SI{9}{m} mast on level ground casts a shadow of only
-$L\approx\SI{4.2}{m}$. The amplification factor is then $D/L\approx18$, so a
-\SI{\pm 3}{m} uncertainty in $H$ spreads the glider height over roughly
-\SIrange{88}{197}{m}. That spread comes before any error in $L$, which at
-\SI{10}{cm} ground resolution is itself a few percent. Short shadows under a high
-summer sun make mast calibration intrinsically weak for this scene. This motivates
-the ephemeris route described next.
-
-\section{Solar elevation from an ephemeris}\label{sec:ephemeris}
-
-\subsection{Acquisition time}
-
-The covering SWISSIMAGE flight strip is \code{20230714\_1118\_12504}, flown on
-14~July~2023. Its identifier encodes the \emph{start} of acquisition, 11:18~UTC.
-The exposure at the glider comes later along the strip and is not published, so
-the solar angle has to be bounded over a time window rather than evaluated at one
-instant. The strip's whole extent is about \SI{58}{km} east–west. At typical
-survey speeds that takes on the order of a quarter of an hour, and we adopt the
-generous window 11:18--11:48~UTC.
-
-\subsection{Solar position}
-
-The solar position follows the low-precision algorithm of Meeus, as used in the
-NOAA solar calculator, which is accurate to about \ang{;1;} for present-day dates.
-With $T$ the number of Julian centuries since J2000.0, the steps are as follows:
-\begin{align}
-  L_0 &= \ang{280.46646} + \ang{36000.76983}\,T + \ang{0.0003032}\,T^2
-     &&\text{(mean longitude)}\\
-  M &= \ang{357.52911} + \ang{35999.05029}\,T - \ang{0.0001537}\,T^2
-     &&\text{(mean anomaly)}\\
-  \lambda &= L_0 + C(M) - \ang{0.00569} - \ang{0.00478}\sin\Omega
-     &&\text{(apparent longitude)}\\
-  \sin\delta &= \sin\varepsilon\,\sin\lambda
-     &&\text{(declination)}
-\end{align}
-Here $C$ is the equation of centre, $\Omega$ the longitude of the Moon's
-ascending node and $\varepsilon$ the obliquity of the ecliptic. The local hour angle
-$H_\odot$ follows from UTC, the equation of time and the longitude $\lambda_{\mathrm{geo}}$.
-With latitude $\varphi$, elevation and azimuth are
-\begin{align}
-  \sin\alpha &= \sin\varphi\sin\delta + \cos\varphi\cos\delta\cos H_\odot,
-  \label{eq:elev}\\
-  A_\odot &= \operatorname{atan2}\!\bigl(\sin H_\odot,\;
-             \cos H_\odot\sin\varphi - \tan\delta\cos\varphi\bigr) + \ang{180}.
-\end{align}
-At the glider ($\varphi=\ang{46.3674}$\,N, $\lambda_{\mathrm{geo}}=\ang{7.2103}$\,E,
-converted from LV95 with the swisstopo approximation and cross-checked against
-the swisstopo REFRAME service), the declination is $\delta=\ang{21.68}$, the
-equation of time is \SI{-5.9}{min}, and local solar noon falls at 11:37~UTC.
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-UTC (2023-07-14) & $\alpha$ & $A_\odot$ & $\tan\alpha$ \\
-\midrule
-11:00 & \ang{64.19} & \ang{159.92} & 2.0676 \\
-11:18 (strip start) & \ang{65.01} & \ang{169.49} & 2.1452 \\
-11:24 & \ang{65.16} & \ang{172.74} & 2.1600 \\
-11:37 (solar noon) & \ang{65.31} & \ang{179.98} & 2.1748 \\
-11:48 & \ang{65.21} & \ang{186.08} & 2.1647 \\
-12:18 & \ang{63.94} & \ang{202.09} & 2.0446 \\
-\bottomrule
-\end{tabular}
-\caption{Solar position at the glider. An independent evaluation with
-\textsc{astropy} agrees to within \ang{0.01} in both angles.}
+\caption{Solar position at the glider. An independent \textsc{astropy} evaluation agrees to within \ang{0.01}.}
 \label{tab:sun}
 \end{table}
 
-Near solar noon $\dd\alpha/\dd t\approx 0$, so a modest error in the acquisition
-time hardly affects the elevation. Over the whole window 11:18--11:48~UTC,
-$\alpha\in[\ang{65.01},\,\ang{65.31}]$, i.e.\ $\alpha=\ang{65.16}\pm\ang{0.15}$.
-In contrast, the azimuth turns at about \ang{0.5} per minute, which makes it a
-sensitive clock (Section~\ref{sec:case}).
+Close to solar noon the elevation hardly changes: a full minute of timing error moves $\alpha$ by only
+\ang{0.02}, i.e.\ \SI{0.2}{m} of height. The azimuth, in contrast, turns by \ang{0.55} per minute.
+That makes the shadow direction a sensitive clock, which Section~\ref{sec:checks} uses as a check.
 
-\section{Bounded uncertainty propagation}\label{sec:uncertainty}
+\section{How an orthophoto draws a glider: relief displacement}\label{sec:relief}
 
-\subsection{Interval arithmetic for monotone formulas}
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[scale=0.9, >=Stealth]
+  \draw[thick] (-1,0) -- (11,0);
+  \coordinate (C) at (0,7);
+  \fill (C) circle (3pt) node[left] {camera $(x_0, Z_c)$};
+  \draw[dotted] (C) -- (0,0) node[below] {nadir $x_0$};
+  \coordinate (G) at (6.0,2.0);
+  \coordinate (A) at (8.4,0);
+  \fill (G) circle (2.5pt) node[left=3pt] {glider $(N_g,Z)$};
+  \draw[thick, blue!70!black] (C) -- (A);
+  \fill[blue!70!black] (A) circle (2.5pt);
+  \node[below, blue!70!black] at (A) {image $N'$};
+  \draw[dashed] (G) -- (6.0,0) node[below] {$N_g$};
+  \draw[<->, red!70!black] (6.0,-0.75) -- (8.4,-0.75) node[midway, below] {$\Delta = (Z-z')\tan\theta$};
+  \coordinate (S) at (10.4,0);
+  \fill (S) circle (2.5pt) node[below] {shadow};
+  \draw[->, orange!80!black, thick] ($(G)!-0.25!(S)$) -- (S);
+  \draw ($(C)+(0,-1.4)$) arc[start angle=-90, end angle={-90+50.2}, radius=1.4];
+  \node at ($(C)+(0.45,-1.85)$) {$\theta$};
+  \node[font=\small] at (2.2,0.35) {north $\rightarrow$};
+\end{tikzpicture}
+\caption{North--height section across the flight line (not to scale). The camera sees the glider
+at angle $\theta$ off vertical. The orthophoto puts it where that ray meets the ground, a distance $\Delta$
+further from the nadir. Here the shadow also lies to the north, so the image of the glider moves towards its
+shadow and $D$ is underestimated.}
+\label{fig:relief}
+\end{figure}
 
-Each input $x$ is given as a central value with a non-negative bound,
-$x\in[x-\varepsilon_x,\,x+\varepsilon_x]$. The calculator reports the exact range of the
-output over the box of all inputs. This is not a statistical confidence interval.
+\subsection{Recovering the camera from the strip footprint}
 
-\begin{proposition}
-Let $f(x_1,\dots,x_n)$ be monotone in each argument over a box
-$B=\prod_i[a_i,b_i]$. Then $\min_B f$ and $\max_B f$ are attained at the corner where
-each $x_i$ is set to the end of its interval that minimises or maximises $f$. That
-end is fixed by the sign of $\partial f/\partial x_i$.
-\end{proposition}
-\begin{proof}
-Change one coordinate at a time towards the chosen endpoint. By monotonicity no
-step decreases (or increases) $f$, so the chosen corner is extremal.
-\end{proof}
-
-\noindent\emph{Height formula.} With $D>0$ and $\tan\alpha>0$, $h$ in
-\eqref{eq:height} increases with $D$, $\tan\alpha$ and $z_s$ and decreases with $z_g$.
-The terrain elevations $z_s$ and $z_g$ are bounded independently, each by
-$\varepsilon_z$. Hence
-\begin{align}
-  h_{\min} &= (D-\varepsilon_D)\,\tan\alpha_{\min} + (z_s-z_g) - 2\varepsilon_z,\\
-  h_{\max} &= (D+\varepsilon_D)\,\tan\alpha_{\max} + (z_s-z_g) + 2\varepsilon_z,
-\end{align}
-provided $D-\varepsilon_D>0$. Because $\tan$ is increasing on $(\ang{0},\ang{90})$,
-a direct solar bound $\alpha\pm\varepsilon_\alpha$ maps to
-$[\tan(\alpha-\varepsilon_\alpha),\tan(\alpha+\varepsilon_\alpha)]$.
-The calculator requires $0<\alpha-\varepsilon_\alpha$ and
-$\alpha+\varepsilon_\alpha<\ang{90}$.
-
-\noindent\emph{Mast calibration.} Write $R=H+z_b-z_t$ for the rise.
-Then $\tan\alpha=R/L$ increases in $R$ and decreases in $L$, and
-$\varepsilon_R=\varepsilon_H+2\varepsilon_z$, so
+A pushbroom line looks out to $\pm\beta$ on either side of the nadir track. Over a ridge the
+swath edge meets the ground sooner, and over a valley later. A swath edge at terrain height $z$
+lies at horizontal distance $(Z_c - z)\tan\beta$ from the nadir track, so the footprint width across
+the track at any along-track position is
 \begin{equation}
-  \tan\alpha_{\min} = \frac{R-\varepsilon_R}{L+\varepsilon_L},\qquad
-  \tan\alpha_{\max} = \frac{R+\varepsilon_R}{L-\varepsilon_L},
+  w = (Z_c - z_N)\tan\beta + (Z_c - z_S)\tan\beta = \tan\beta\,\bigl(2Z_c - z_N - z_S\bigr),
+  \label{eq:swath}
 \end{equation}
-which require $R-\varepsilon_R>0$ and $L-\varepsilon_L>0$. These conditions mean the
-Sun must stay above the horizon and the shadow must have positive length throughout
-the box. Chaining the two monotone maps gives the overall height interval.
+where $z_N$ and $z_S$ are the terrain heights at the north and south edges. This is linear in the
+unknowns $\tan\beta$ and $Z_c\tan\beta$. We measured $w$, $z_N$ and $z_S$ on 56 cross-sections of the
+footprint polygon, one per kilometre. The strip crosses Lake Geneva (\SI{372}{m}) and Alpine ridges
+above \SI{3000}{m}, which makes the fit well conditioned. The result is:
+\begin{center}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+& fit (95\,\% bootstrap) & check \\
+\midrule
+field of view $2\beta$ & \ang{45.30} (\ang{45.12}--\ang{45.49}) & datasheet SH120 nadir: \ang{45.2} \\
+flight altitude $Z_c$ & \SI{6393}{m} (6370--6417) & \num{24000}:1 $\times$ \SI{0.25}{m} = \SI{6000}{m} above $\approx$\SI{400}{m} \\
+width residual & \SI{8.4}{m} RMS, $R^2 = 0.9997$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The fitted field of view matches the manufacturer's value to \ang{0.1}, and the altitude matches the nominal pixel
+size over the lake. This confirms both the camera model and the constant-altitude assumption. Each
+cross-section then gives the nadir track as the average of the two edge solutions,
+$x_0 = \tfrac12\bigl[(N_{\text{edge}} - (Z_c-z_N)\tan\beta) + (S_{\text{edge}} + (Z_c - z_S)\tan\beta)\bigr]$.
+The track is straight to \SI{7}{m} RMS. At the glider it passes $N = x_0 = \num{1134654.6}\pm\SI{1.3}{m}$, and we
+carry $\pm\SI{4}{m}$ to cover local wander.
 
-The worst case treats $z_s$, $z_g$ (and $z_b$, $z_t$) as independent. If their
-errors are correlated, for example through a common datum offset, the true spread is
-smaller, so the interval is conservative. Bounds set to zero mean that the
-uncertainty is \emph{not quantified}, not that the input is exact.
+\subsection{The correction}
 
-\subsection{First-order sensitivities}
-
-Linearising \eqref{eq:height} shows which input dominates:
+The glider's image lies $N' - x_0 = \SI{481}{m}$ north of the nadir track, and the camera is
+$Z_c - z' = \SI{4466}{m}$ above the ground there. The ray reaches the ground at
+$\tan\theta = 481/4466 = 0.1077$, i.e.\ $\theta = \ang{6.2}$ off vertical. By similar triangles, a point at
+height $Z$ on that ray is drawn displaced away from the nadir by
 \begin{equation}
-  \frac{\partial h}{\partial D} = \tan\alpha,\qquad
-  \frac{\partial h}{\partial\alpha} = D\sec^2\alpha,\qquad
-  \frac{\partial h}{\partial z_s} = 1,\qquad
-  \frac{\partial h}{\partial z_g} = -1.
-\end{equation}
-At $\alpha=\ang{65.16}$, $\tan\alpha=2.16$ and $\sec^2\alpha=5.66$. For $D=\SI{76}{m}$:
-\begin{itemize}
-  \item \SI{1}{m} of horizontal error in $D$ moves $h$ by \SI{2.16}{m};
-  \item \ang{1} of solar error moves $h$ by $D\sec^2\alpha\cdot\pi/180=\SI{7.5}{m}$;
-  \item each metre of terrain error moves $h$ by \SI{1}{m}.
-\end{itemize}
-A high Sun amplifies errors in the measured separation. Accuracy therefore depends
-on locating the glider and its shadow correctly far more than on the exact timestamp.
-
-\section{Error sources outside the bounds}\label{sec:systematic}
-
-\subsection{Orthophoto displacement of the glider}
-
-The orthophoto places every pixel as if it lay on the terrain. A point at height
-$h$ above the terrain, viewed at zenith angle $\theta$ from the camera, is therefore
-drawn displaced \emph{away} from the camera's nadir by
-\begin{equation}
-  \Delta = h\tan\theta .
+  \Delta = (Z - z')\tan\theta \approx \SI{20}{m}\quad\text{(northwards)},
   \label{eq:relief}
 \end{equation}
-The shadow lies on the terrain and is not displaced. Only the component of
-$\Delta$ along the shadow direction changes $D$. Let $\theta_\parallel$ be the
-signed view tilt projected onto the vertical plane of the sunlight, positive when
-the glider is drawn towards its shadow. The observed separation is then
-$D_{\mathrm{obs}} = D - h\tan\theta_\parallel$. Substituting
-$D = D_{\mathrm{obs}} + h\tan\theta_\parallel$ into \eqref{eq:height} and solving for $h$
-gives the self-consistent correction
+with the true position $N_g = x_0 + (N'-x_0)\,(Z_c - Z)/(Z_c - z')$. Because the pushbroom's nadir
+lines look straight down along-track, there is no east--west displacement. The datasheet places the
+nadir group at \ang{0}, and we allow $\pm\ang{0.5}$.
+
+The sunlight runs \ang{6.6} west of north, almost exactly along $\Delta$. The true sun-ray distance
+is therefore $D = D' + (Z - z')\tan\theta_\parallel$, with $\tan\theta_\parallel = \tan\theta\cos\ang{6.6} = 0.1070$.
+Substituting into~\eqref{eq:ray} gives an equation that contains $Z$ on both sides. Solving it gives
 \begin{equation}
-  h = \frac{D_{\mathrm{obs}}\tan\alpha + z_s - z_g}{1-\tan\theta_\parallel\tan\alpha}.
-  \label{eq:relief-corrected}
+  Z - z' = \frac{D'\tan\alpha + z_s - z'}{1 - \tan\theta_\parallel\tan\alpha}
+         = \frac{164.1 - 21.6}{1 - 0.1070\times2.1625} = \frac{142.5}{0.769} = \SI{185.4}{m}.
+  \label{eq:relief-solved}
 \end{equation}
-The amplification is strong. With $\tan\alpha\approx2.16$, a view tilt of only
-\ang{\pm5} along the ray changes $h$ by roughly \SIrange{-16}{+23}{\percent}. That is
-about \SIrange{-23}{+33}{m} at $h\approx\SI{142}{m}$.
-The camera pose of the source exposure is not reconstructed here,
-so $\theta_\parallel$ is unknown. Equation~\eqref{eq:relief-corrected} is the
-place to apply it once it is known. The calculator uses the apparent glider
-position and flags its results as provisional for this reason. The terrain value
-$z_g$ should also be re-read beneath the corrected glider position.
+The denominator is the key quantity. Every metre the glider rises moves its image
+\SI{0.107}{m} towards the shadow. That shortens the apparent baseline, and the shadow formula multiplies
+the shortfall by $\tan\alpha$, so the bias feeds on itself. Here the feedback factor is $1/0.769 = 1.30$: the naive
+estimate is \SI{30}{\percent} too low.
 
-The displacement component \emph{perpendicular} to the shadow ray would show up as
-a mismatch between the observed azimuth $A_{gs}$ and $A_\odot+\ang{180}$ at the
-exposure time. Section~\ref{sec:case} finds no such mismatch within the time
-window. The along-ray component, which is the one that affects $h$, cannot be
-detected that way.
+Finally, the ground must be read beneath the \emph{true} position, \SI{20}{m} south of the image,
+where the terrain is \SI{1.3}{m} higher ($z_g = \SI{1928.8}{m}$). Then $h = \SI{184.1}{m}$.
 
-\subsection{Other effects}
-\begin{itemize}
-  \item \textbf{Finite solar disk.} The Sun subtends $\approx\SI{9.3}{mrad}$, so a
-        shadow cast from slant range $h/\sin\alpha$ is blurred by about
-        \SI{1.6}{m} along the ground. This softens the shadow edges but leaves the centroid
-        unbiased. Matching corresponding points (e.g.\ wing centre to shadow centre)
-        avoids edge bias.
-  \item \textbf{Shadow identification.} If the shadow belongs to a different
-        object or a different exposure, the result is meaningless. No interval
-        covers this.
-  \item \textbf{Mosaic time mixing.} A mosaic may combine exposures taken at
-        different times. Mast calibration is valid only if masts and glider share
-        one exposure.
-  \item \textbf{Terrain epoch and surface.} The terrain service reflects the present
-        bare-earth model, not necessarily the surface at acquisition (snow,
-        vegetation, works).
-\end{itemize}
+\section{Glider motion during the scan}\label{sec:motion}
 
-\section{Case study: Isenau, 14 July 2023}\label{sec:case}
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-Point & Easting & Northing & Terrain \\
-\midrule
-Glider (apparent) & \num{2582425.46} & \num{1135134.94} & \SI{1927.8}{m} \\
-Shadow (candidate) & \num{2582415.86} & \num{1135210.29} & \SI{1906.4}{m} \\
-\bottomrule
-\end{tabular}
-\caption{LV95 coordinates of the map pins and terrain elevations (retrieved
-7~October~2026). These are pin centres, not surveyed points.}
-\label{tab:inputs}
-\end{table}
-
-\paragraph{Geometry.} From Table~\ref{tab:inputs},
-$D=\SI{75.959}{m}$, $A_{gs}=\ang{352.74}$ and $z_s-z_g=\SI{-21.4}{m}$. The shadow
-falls about \SI{21}{m} downhill, so the terrain correction lowers the height.
-
-\paragraph{Azimuth consistency.} Equation~\eqref{eq:azimuth} requires
-$A_\odot = \ang{172.74}$, which the ephemeris gives at 11:24~UTC. That is six minutes
-after the strip start and inside the adopted window. The shadow direction is
-therefore consistent with the documented flight, and there is no evidence of a
-cross-ray displacement. A shadow cast an hour earlier or later would point about \ang{30} away.
-
-\paragraph{Height (ephemeris route).} With $\alpha=\ang{65.16}\pm\ang{0.15}$ and
-the apparent glider position,
+A pushbroom image is not a snapshot. The eastbound aircraft (about \SI{110}{m/s}) scans the shadow, which is
+\SI{9.7}{m} further west, before the glider, so the two are recorded
+$\Delta t = 9.7/110 \approx \SI{0.09}{s}$ apart. The glider is flying at, say, \SI{30}{m/s} on heading \ang{227}.
+In that interval it moves \SI{2.6}{m} south-west, away from its shadow. The shadow in the image was
+therefore cast from a point about \SI{2.6}{m} north-east of where the glider is drawn, which is closer to the
+shadow. Allowing for this, with the general time offset
 \begin{equation}
-  h = 75.959\times\tan\ang{65.16} - 21.4 \approx \SI{142.7}{m},
-  \qquad h\in[\SI{141.5}{m},\,\SI{143.8}{m}]
-  \ \text{(solar bound only)}.
+  \Delta t = \frac{E_g - E_s + (Z - z_s)\tan\gamma}{V},
 \end{equation}
-Adding plausible measurement bounds of $\varepsilon_D=\SI{5}{m}$ and
-$\varepsilon_z=\SI{1}{m}$ widens this to \SIrange{128.8}{156.7}{m}. Even a
-$\pm\ang{1}$ solar bound, wide enough to cover acquisition anywhere from about
-11:00 to 12:15~UTC, gives \SIrange{135.4}{150.5}{m} with exact $D$ and terrain.
+where $\gamma$ is the along-track look angle and $V$ the aircraft ground speed,
+lowers the estimate to \SI{179.8}{m}. The glider's airspeed is not measured. We take
+\SIrange{20}{40}{m/s} (72--\SI{144}{km/h}), the normal range for a glider, and heading
+$\ang{227}\pm\ang{10}$ to allow for wind drift. The white glider shows no colour fringes, which confirms
+that the colour bands of the nadir group were recorded simultaneously.
 
-\paragraph{Height (mast route).} The aerial shadow lengths of the two masts have
-not yet been measured. The mast route therefore yields no number, and with
-$\pm\SI{3}{m}$ mast heights it would be much weaker than the ephemeris
-(Section~\ref{sec:masts}). Measured mast shadows remain valuable as an
-independent check that the solar angle in the actual exposure is about \ang{65}.
+\section{The full model}\label{sec:model}
 
-\paragraph{Summary.} Taking the apparent glider position, the candidate shadow
-and the documented flight date, the glider was about $\SI{140}{m}$ above the
-terrain beneath it. The result is conditional on:
-\begin{enumerate}[label=(\roman*)]
-  \item correct shadow identification;
-  \item exposure during the 2023-07-14 strip near midday;
-  \item a negligible along-ray orthophoto displacement.
+Collecting Sections~\ref{sec:shadow}--\ref{sec:motion}, the unknowns are the glider's true position
+$\mathbf g=(E_g,N_g)$ and height $Z$ at the instant the scan reached it. The model is
+\begin{align}
+  E_g &= E' - (Z - z')\tan\gamma, &&\text{(camera ray, along track)}\\
+  N_g &= x_0 + (N' - x_0)\,\frac{Z_c - Z}{Z_c - z'}, &&\text{(camera ray, across track)}\\
+  (\mathbf s - \mathbf g + \mathbf v\,\Delta t)\cdot\hat{\mathbf u} &= \frac{Z - z_s}{\tan\alpha},
+      &&\text{(sun ray)}
+\end{align}
+with $\hat{\mathbf u}$ the horizontal unit vector pointing away from the Sun and $\mathbf v$ the glider velocity.
+For given inputs this is one equation in $Z$, solved by root-bracketing. The height above ground is then
+$h = Z - z_{\text{DTM}}(\mathbf g)$ (\code{analysis/solve\_height.py}). The component of the sun-ray equation
+\emph{across} $\hat{\mathbf u}$ is not used in the solution. It is kept as a residual that tests whether the
+geometry closes.
+
+\section{Consistency checks}\label{sec:checks}
+
+\begin{enumerate}
+  \item \textbf{Field of view and altitude.} These come from the footprint alone and match the
+        manufacturer's datasheet (Section~\ref{sec:relief}).
+  \item \textbf{Two clocks.} The shadow direction alone dates the exposure. After the relief
+        correction, the shadow is exactly opposite the Sun at 11:26:35~UTC, which is
+        $1.4\pm0.9$~min after the flight-log estimate of 11:25:09. Before the correction, the
+        answer would have been 11:24. Both are well inside the survey window, and a shadow from another time of
+        day would point tens of degrees away.
+  \item \textbf{Closure.} At 11:25 the cross-ray residual is \SI{+1.3}{m} for a stationary
+        glider and \SI{-0.9}{m} for one moving at \SI{30}{m/s}. Both are within the shadow's
+        positional uncertainty. The geometry closes without any free parameter tuned to make it do so.
+  \item \textbf{Shadow shape.} The matched template needs no stretch and a scale of 0.97. That is
+        consistent with the glider image being enlarged across-track by $(Z_c - z')/(Z_c - Z) = 1.04$.
 \end{enumerate}
-Condition (iii) is the one that limits the accuracy. Equation~\eqref{eq:relief-corrected}
-shows how to correct for it once the source exposure geometry is known.
 
-\section{Implementation and verification}
+\section{Uncertainty}\label{sec:uncertainty}
+
+\subsection{Monte Carlo}
+
+All uncertain inputs are sampled together over \num{20000} draws:
+\begin{itemize}
+  \item exposure time $\mathcal N(7.15, 0.91)$~min after 11:18;
+  \item glider centroid $\sigma=\SI{0.15}{m}$; shadow centroid $\sigma=\SI{1.2}{m}$ along the wing axis
+        and \SI{0.5}{m} along the sun direction;
+  \item $Z_c\ \mathcal N(6393, 12)$; $x_0\ \mathcal N(\text{fit}, 4)$; $\gamma\ \mathcal U(\pm\ang{0.5})$;
+  \item glider speed $\mathcal U(20, 40)$~m/s; heading $\mathcal N(227, 10)$; aircraft $\mathcal N(110, 15)$~m/s;
+  \item terrain: \SI{0.5}{m} DTM error at each end, a grass offset of 0 to \SI{0.5}{m} at the shadow, and
+        \SI{1}{m} uncertainty in the surface the orthophoto was projected onto.
+\end{itemize}
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}lr@{}}
 \toprule
-Equation & Implementation \\
+Input group (varied alone) & $\sigma_h$ (m) \\
 \midrule
-\eqref{eq:ray}, \eqref{eq:azimuth} & \code{separation()} \\
-\eqref{eq:mast} + bounds & \code{calibrateReference()} \\
-direct $\alpha\pm\varepsilon_\alpha$ & \code{directSun()} \\
-\eqref{eq:height} + bounds & \code{heightFromShadow()} \\
-whole pipeline, warnings & \code{solve()} \\
-\eqref{eq:elev} ff., LV95$\to$WGS84 & \code{paper/solar.mjs} \\
+Shadow and glider image positions & 2.64 \\
+Glider motion during scan & 1.49 \\
+Camera geometry ($Z_c$, $x_0$, $\gamma$) & 0.92 \\
+Terrain & 0.88 \\
+Exposure time / solar position & 0.19 \\
+\midrule
+All together & 3.3 \\
 \bottomrule
 \end{tabular}
-\caption{Where each equation is implemented. Functions without a path are in
-\code{glider-height/dist/calculations.mjs}.}
+\caption{Error budget. The limiting factor is locating the faint shadow along the wing axis.}
+\label{tab:budget}
 \end{table}
 
-The calculation module has no dependencies. Its test suite (\code{npm test} in
-\code{glider-height/}) checks the following:
-\begin{itemize}
-  \item the LV95 separation and azimuth of the case-study pins;
-  \item $h=D$ on flat ground at \ang{45};
-  \item the sign of the uphill and downhill corrections;
-  \item the corner-case interval bounds against hand-computed values;
-  \item rejection of non-finite, singular and horizon-grazing inputs;
-  \item non-averaging of the second mast;
-  \item flagging, rather than clamping, of below-ground results.
-\end{itemize}
-The solar positions in Table~\ref{tab:sun} were cross-checked against
-\textsc{astropy} (agreement better than \ang{0.01}). The coordinate conversion was
-cross-checked against the swisstopo REFRAME service (agreement better than
-\SI{1}{m}).
+\noindent The result is
+\[
+  h = \SI{179.9}{m}\ (\text{median}),\qquad 68\,\%: \SIrange{176.5}{183.1}{m},\qquad
+  95\,\%: \SIrange{173.3}{186.2}{m}.
+\]
 
-\section*{Data sources}
+\subsection{Worst-case intervals (calculator)}
+
+The browser calculator in \code{glider-height/} implements Equation~\eqref{eq:height} without the camera
+model. It uses exact worst-case intervals instead of Monte Carlo. $h$ increases with $D$,
+$\tan\alpha$ and $z_s$, and decreases with $z_g$, so over an input box the extremes lie at corners:
+\begin{align}
+  h_{\min} &= (D-\varepsilon_D)\tan\alpha_{\min} + (z_s - z_g) - 2\varepsilon_z,\\
+  h_{\max} &= (D+\varepsilon_D)\tan\alpha_{\max} + (z_s - z_g) + 2\varepsilon_z.
+\end{align}
+To reproduce the corrected result (\SI{179.8}{m}) in the calculator, enter the position from which the glider
+cast the imaged shadow, i.e.\ corrected for relief displacement and for \SI{30}{m/s} of motion,
+$(\num{2582427.72}, \num{1135117.71})$, with $z_g = \SI{1928.8}{m}$, the image-measured shadow
+$(\num{2582416.12}, \num{1135210.68})$ with $z_s = \SI{1905.9}{m}$, and $\alpha = \ang{65.19}$.
+
+\section{Alternative: reference masts}\label{sec:masts}
+
+Instead of an ephemeris, $\alpha$ can be calibrated from a vertical mast of known height $H$, using
+$\tan\alpha = (H + z_b - z_t)/L$, where $L$ is the mast's shadow length and $z_b$, $z_t$ the terrain
+at its base and shadow tip. The calculator supports this, and two ski-lift masts nearby were
+estimated at about \SI{9}{m} and \SI{10}{m} ($\pm\SI{3}{m}$) from ground photographs. At $\alpha\approx\ang{65}$,
+however, a \SI{9}{m} mast casts only a \SI{4.2}{m} shadow, and $\partial h/\partial H = D/L \approx 18$. A
+$\pm\SI{3}{m}$ uncertainty in the mast height would therefore spread the glider height over
+$\pm\SI{55}{m}$. The ephemeris is about 300 times more precise here, so the masts are not used.
+
+\section{Limitations}
+\begin{itemize}
+  \item \textbf{Shadow identity.} The shadow is identified by position, orientation, size and shape (it matches
+        the glider's silhouette at scale 0.97 and the correct wing angle). It is faint, however, and no
+        statistical interval covers a misidentification.
+  \item \textbf{Mosaic seams.} The orthophoto is assumed to come from strip \code{20230714\_1118\_12504}.
+        The strip covers the location, and the two clocks agree with it.
+  \item \textbf{Glider attitude.} A banked glider has a different silhouette and shadow, but the matching is
+        centroid-based and both silhouettes come from the same object.
+  \item \textbf{Glider speed.} The speed is assumed, not measured. In principle it is encoded in the pushbroom
+        distortion of the glider's image, which shears the wing--fuselage angle. Measuring that distortion
+        could remove the second-largest error term.
+\end{itemize}
+
+\section*{Reproduction}
+\begin{tabular}{@{}ll@{}}
+\code{analysis/measure\_image.py} & glider and shadow centroids from the WMS imagery \\
+\code{analysis/fit\_camera.py} & field of view, flight altitude, nadir track, exposure time \\
+\code{analysis/solve\_height.py} & full model, Monte Carlo, error budget \\
+\code{paper/solar.mjs} & solar position \\
+\code{glider-height/} & browser calculator and tested JavaScript module \\
+\end{tabular}
+
+\section*{Sources}
 {\raggedright
 \begin{itemize}
-  \item swisstopo SWISSIMAGE orthophoto mosaic, and flight-strip metadata for
-        strip \code{20230714\_1118\_12504} from the layer
-        \nolinkurl{ch.swisstopo.lubis-bildstreifen}.
-  \item swisstopo swissALTI3D terrain model via the geo.admin.ch height service.
-  \item Ground panoramas (March 2011) for the mast-height reconstruction; linked,
-        not reproduced.
-  \item J.~Meeus, \emph{Astronomical Algorithms}, 2nd ed., Willmann-Bell, 1998;
-        NOAA Global Monitoring Laboratory solar calculator.
+  \item swisstopo SWISSIMAGE and its flight-strip metadata (layer \nolinkurl{ch.swisstopo.lubis-bildstreifen}).
+  \item swisstopo swissALTI3D terrain model, via the geo.admin.ch height service.
+  \item Leica Geosystems, \emph{Leica ADS100 product specifications}, 2016.
+  \item J.~Meeus, \emph{Astronomical Algorithms}, 2nd ed., Willmann-Bell, 1998; NOAA solar calculator.
 \end{itemize}
 }
 
