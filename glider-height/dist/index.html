@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estimate a glider’s height from its shadow, terrain elevations, and a measured solar angle or mast reference.">
+  <title>Glider height · Shadow geometry</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23152939'/%3E%3Cpath d='M5 24 16 7 27 24M16 7v17M10 17h12' fill='none' stroke='%235ce0bf' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <header class="topbar"><a href="./" class="brand"><span class="brand-mark">△</span> SHADOW GEOMETRY</a><span class="location">Isenau, Switzerland</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">A FIELD CALCULATION</p><h1>How high is the glider?</h1><p>Measure a shadow. Account for the hillside. Keep the assumptions visible.</p></div><a href="#method" class="text-link">Read the method</a></div>
+    <div class="workspace">
+      <form id="calculator" novalidate>
+        <section class="panel"><div class="section-title"><span class="step">01</span><h2>Glider &amp; terrain</h2></div>
+          <p class="note">LV95 coordinates and terrain elevations from the supplied map pins. The glider pin is an apparent image position.</p>
+          <div class="point-grid">
+            <span></span><span class="column-label">Glider</span><span class="column-label">Shadow</span>
+            <span class="row-label">Easting · m</span><input id="plane-easting" aria-label="Glider easting in metres" type="number" step="any" value="2582425.46" required><input id="shadow-easting" aria-label="Shadow easting in metres" type="number" step="any" value="2582415.86" required>
+            <span class="row-label">Northing · m</span><input id="plane-northing" aria-label="Glider northing in metres" type="number" step="any" value="1135134.94" required><input id="shadow-northing" aria-label="Shadow northing in metres" type="number" step="any" value="1135210.29" required>
+            <span class="row-label">Ground · m ASL</span><input id="plane-elevation" aria-label="Ground elevation beneath glider in metres above sea level" type="number" step="any" value="1927.8" required><input id="shadow-elevation" aria-label="Ground elevation at shadow in metres above sea level" type="number" step="any" value="1906.4" required>
+          </div>
+          <div class="measurement-strip"><span>Horizontal separation <strong id="distance">75.96 m</strong></span><span>Ground at shadow <strong id="terrain-difference">21.40 m lower</strong></span></div>
+          <button id="fetch-terrain" class="secondary" type="button">Refresh terrain elevations</button><p id="terrain-status" class="note" role="status">Prefilled elevations retrieved 7 October 2026. Refresh uses the current coordinates and the public Swiss terrain API.</p>
+          <label class="check"><input id="position-confirmed" type="checkbox"><span>I have corrected or independently verified the glider’s horizontal position and updated the ground elevation beneath it.</span></label>
+        </section>
+        <section class="panel"><div class="section-title"><span class="step">02</span><h2>Find the Sun’s elevation</h2></div>
+          <div class="segmented" role="group" aria-label="Solar elevation method"><label><input type="radio" name="mode" value="reference" checked><span>Use a mast</span></label><label><input type="radio" name="mode" value="direct"><span>Enter solar angle</span></label></div>
+          <div id="reference-controls">
+            <label class="field">Primary reference<select id="primary"><option value="0">Mast 1 · eastern mast</option><option value="1">Mast 2 · western mast</option></select></label>
+            <p class="note">Rough Street View estimates are prefilled: Mast 1 ≈9 m, Mast 2 ≈10 m, each with a working ±3 m bound. Replace these when measured heights are available. A complete second reference checks the first.</p>
+            <div class="mast-grid" id="mast-fields"></div>
+            <p class="note">Height is vertical from bare ground to the point casting the measured shadow. Shadow length runs from the mast base to that point’s shadow on the ground. Similar fittings do not establish equal installed heights.</p>
+            <label class="check"><input id="same-capture" type="checkbox"><span>I have verified that the mast and glider aerial images have matching acquisition times.</span></label>
+          </div>
+          <div id="direct-controls" hidden><label class="field">Solar elevation · degrees<input id="angle" type="number" min="0" max="90" step="any" placeholder="Measured or calculated angle"></label><p class="note">Use the elevation above the horizon at the actual image acquisition date and time, not the Sun’s compass direction.</p></div>
+        </section>
+        <section class="panel"><details><summary>Measurement bounds <span class="summary-note">optional</span></summary><p class="note">Enter ± bounds on the inputs. These produce a worst-case sensitivity range, not a confidence interval. Zero leaves that source of uncertainty unmodeled.</p><div class="two-col">
+          <label class="field">Glider separation ± m<input id="distance-error" type="number" min="0" step="any" value="0"></label>
+          <label class="field">Each ground elevation ± m<input id="terrain-error" type="number" min="0" step="any" value="0"></label>
+          <label class="field" id="angle-bound-field">Solar elevation ± degrees<input id="angle-error" type="number" min="0" step="any" value="0"></label>
+        </div><p class="note">A separation bound can explore camera displacement, but it does not reconstruct the true glider position or its underlying terrain.</p></details></section>
+      </form>
+      <aside class="result-column">
+        <section class="result-card" aria-live="polite" aria-atomic="true"><div class="result-heading"><span class="eyebrow">HEIGHT ABOVE GROUND</span><span class="badge" id="result-status">Awaiting measurements</span></div><div class="height-value" id="height-value">— <span>m</span></div><p id="result-caption">Enter a measured mast height, shadow length, and shadow endpoint elevation.</p><div class="result-stats"><div><span>Solar elevation</span><strong id="solar-value">—</strong></div><div><span>Sensitivity range</span><strong id="range-value">Not quantified</strong></div></div>
+          <svg id="diagram" viewBox="0 0 480 270" role="img" aria-labelledby="diagram-title diagram-description"><title id="diagram-title">Glider and shadow cross-section</title><desc id="diagram-description">Schematic of a glider above sloping terrain and sunlight reaching its ground shadow. No scale is implied.</desc><path d="M38 214 L430 242 L430 270 L38 270 Z" fill="#223d4b"/><path d="M38 214 L430 242" stroke="#7598a6" stroke-width="2"/><path d="M88 88 L388 239" stroke="#5ce0bf" stroke-width="2" stroke-dasharray="7 5"/><path d="M88 88 L88 218" stroke="#b5cbd4" stroke-width="1.5"/><path d="M78 94 L98 82 M82 82 L94 96" stroke="white" stroke-width="3"/><ellipse cx="388" cy="239" rx="16" ry="4" fill="#061d28"/><path d="M88 254 L388 254" stroke="#7598a6"/><text x="104" y="152" fill="#d1e3e9">H</text><text x="214" y="250" fill="#b5cbd4">D ≈ 76 m</text><text x="309" y="209" fill="#5ce0bf">sunlight</text><text x="38" y="30" fill="#b5cbd4" font-size="13">SCHEMATIC · NOT TO SCALE</text></svg>
+          <p class="equation" id="equation">H = D × tan(α) + z<sub>shadow</sub> − z<sub>beneath</sub></p><div id="result-notes" class="result-notes"></div><button id="export" type="button" class="export" disabled>Download calculation · JSON</button>
+        </section>
+        <section class="reference-card"><h2>Reference locations</h2><ul><li><a href="https://s.geo.admin.ch/1hert15z388u" target="_blank" rel="noopener noreferrer">Glider in the aerial image</a></li><li><a href="https://s.geo.admin.ch/ogny0vgec6un" target="_blank" rel="noopener noreferrer">Glider’s candidate shadow</a></li><li><a href="https://s.geo.admin.ch/ygxkov4vpyjz" target="_blank" rel="noopener noreferrer">Mast 1 · eastern mast</a></li><li><a href="https://s.geo.admin.ch/imbfwhnh2xj9" target="_blank" rel="noopener noreferrer">Mast 2 · western mast</a></li><li><a href="https://s.geo.admin.ch/ggx6fqj437c1" target="_blank" rel="noopener noreferrer">Lift terminal · additional reference</a></li></ul><p class="note">Mast heights are approximate photo estimates. Shadow lengths and endpoint elevations still need measuring.</p></section>
+      </aside>
+    </div>
+    <section id="method" class="method"><p class="eyebrow">THE METHOD</p><h2>One ray of sunlight, two terrain elevations.</h2><div class="method-grid"><div><h3>1. Calibrate with a vertical mast</h3><p>tan(α) = (h<sub>mast</sub> + z<sub>base</sub> − z<sub>mast shadow</sub>) / L</p><p>The mast height and its horizontal shadow length determine the Sun’s elevation after correcting for the ground slope.</p></div><div><h3>2. Apply the angle to the glider</h3><p>H = D × tan(α) + z<sub>shadow</sub> − z<sub>beneath</sub></p><p>H is the vertical height of the selected glider point above the ground directly beneath it. The current terrain correction is approximately −21.4 m.</p></div><div><h3>3. Check the image geometry</h3><p>SWISSIMAGE is an aerial orthophoto mosaic projected onto terrain. An airborne object can appear displaced. Match corresponding glider and shadow points, verify source acquisition times, and assess camera displacement before reporting a final height.</p></div></div><p class="sources">Sources: <a href="https://www.swisstopo.admin.ch/en/orthoimage-swissimage-10" target="_blank" rel="noopener noreferrer">SWISSIMAGE &amp; acquisition dates</a> · <a href="https://www.swisstopo.admin.ch/dam/de/sd-web/WchyQCcLkyd9/Produktinfo_SWISSIMAGE10cm_DE.pdf" target="_blank" rel="noopener noreferrer">Orthophoto displacement, §1.7</a> · <a href="https://docs.geo.admin.ch/access-data/get-point-height.html" target="_blank" rel="noopener noreferrer">Swiss terrain API</a></p></section>
+  </main>
+  <footer>Shadow geometry · Isenau case study <span>Calculations run in your browser. Terrain refresh sends coordinates to geo.admin.ch.</span></footer>
+</body>
+</html>
