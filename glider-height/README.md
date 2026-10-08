@@ -2,7 +2,7 @@
 
 A dependency-free, publishable web calculator for the Isenau glider case study. It includes an independent JavaScript calculation module, optional terrain refresh, a second-mast cross-check, bounded sensitivity analysis, source links, and JSON export.
 
-**No glider height has been established yet.** Rough mast-height estimates are prefilled from the supplied March 2011 Street View panoramas: **Mast 1 ≈9 m; Mast 2 ≈10 m**, each with a working **±3 m** sensitivity bound. Mast shadow lengths and their actual endpoint elevations remain blank. Matching acquisition times are not yet verified.
+The calculator itself establishes no glider height until mast shadows or a solar angle are entered. The ephemeris-based estimate and the full derivation are in [`../paper/height-estimate.pdf`](../paper/height-estimate.pdf). Rough mast-height estimates are prefilled from the supplied March 2011 Street View panoramas: **Mast 1 ≈9 m; Mast 2 ≈10 m**, each with a working **±3 m** sensitivity bound. Mast shadow lengths and their actual endpoint elevations remain blank. Matching acquisition times are not yet verified.
 
 ## Run locally
 
