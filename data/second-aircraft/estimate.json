@@ -1,0 +1,191 @@
+{
+  "case": "Second aircraft near Zurich airport",
+  "imagery_attribution": "SWISSIMAGE / swisstopo",
+  "pin_aircraft": [
+    2680573.107994411,
+    1261828.454761643
+  ],
+  "pin_shadow": [
+    2680509.385944714,
+    1262076.758070081
+  ],
+  "measurements": {
+    "aircraft": [
+      2680573.0248640645,
+      1261829.2036960255
+    ],
+    "shadow": [
+      2680507.24,
+      1262078.11
+    ],
+    "separation_m": 257.45290151450763,
+    "mask_pixels": 16883,
+    "matched_filter_score": 176.39317617642214,
+    "template_scale": 0.9700000000000001,
+    "template_stretch": 1.0,
+    "note": "Filter score is not a calibrated statistical significance; confirm the visible silhouette.",
+    "landmarks_pixels": [
+      [
+        476.0,
+        485.0
+      ],
+      [
+        319.0,
+        307.0
+      ],
+      [
+        461.0,
+        194.0
+      ],
+      [
+        302.0,
+        557.0
+      ]
+    ],
+    "source_resolution_m": 0.1
+  },
+  "camera": {
+    "sections": 42,
+    "fov_deg": 47.409832753721425,
+    "flight_altitude_m": 2688.033138013633,
+    "nadir_northing_m": 1262259.1448281605,
+    "width_rms_m": 5.826830908335067,
+    "r2": 0.9815871809202547,
+    "bootstrap_95": [
+      [
+        45.4934459303417,
+        2588.1635308491227,
+        1262256.3237308972
+      ],
+      [
+        49.40828920304953,
+        2791.170480068281,
+        1262261.564965966
+      ]
+    ],
+    "reference_fov_deg": 45.2,
+    "reference_fov_flight_altitude_m": 2808.2138335549853,
+    "caveat": "Footprint fit is approximate; bootstrap excludes camera-model and footprint-systematic errors."
+  },
+  "timing": {
+    "strip_id": "20250307_1019_12501",
+    "date": "2025-03-07",
+    "start_utc": "2025-03-07T10:19:00Z",
+    "next_strip_start_utc": "2025-03-07T10:31:00Z",
+    "exposure_interval_minutes_after_1019": [
+      0,
+      13
+    ],
+    "interval_note": "Only bounded by current/next strip starts, including minute truncation. Not a measured exposure time.",
+    "naive_timing_fit_speeds_kmh": [
+      1171.0758370760059,
+      722.1030611647589
+    ],
+    "timing_fit_condition_number": 1039.340144050533,
+    "rejected_gap_minutes": 50,
+    "caveat": "Almost equal strip lengths make speed and turn time poorly identifiable; do not reuse the original narrow timing posterior."
+  },
+  "solar_at_interval_midpoint": {
+    "elevation_deg": 35.101043124454264,
+    "azimuth_deg": 158.0828478701382,
+    "utc": "2025-03-07T10:25:30Z",
+    "note": "Illustrative interval midpoint, not a measured exposure time"
+  },
+  "terrain": {
+    "apparent_aircraft_m": 413.62177664944704,
+    "shadow_m": 409.5175534400027,
+    "true_aircraft_m": 412.0691092171028
+  },
+  "naive_shadow_formula_m": 176.84370898519114,
+  "uncorrected_ray": {
+    "height_m": 175.45125155248832,
+    "altitude_asl_m": 589.0730282019354,
+    "true_position": [
+      2680573.0248640645,
+      1261829.2036960255
+    ],
+    "relief_shift_m": 0.0,
+    "cross_ray_residual_m": 31.8779082819948,
+    "motion_scan_speed_ratio": [
+      0.0,
+      0.0
+    ],
+    "same_instant_separation_m": 257.45290151450763,
+    "corrected_shadow_azimuth_deg": 345.1954854417223
+  },
+  "static_camera": {
+    "height_m": 157.55531514730296,
+    "altitude_asl_m": 569.8203193851355,
+    "true_position": [
+      2680573.0248640645,
+      1261858.73053512
+    ],
+    "relief_shift_m": 29.526839094469324,
+    "cross_ray_residual_m": 20.856557216008646,
+    "motion_scan_speed_ratio": [
+      0.0,
+      0.0
+    ],
+    "same_instant_separation_m": 229.03056117260252,
+    "corrected_shadow_azimuth_deg": 343.3076987375167
+  },
+  "moving_camera": {
+    "height_m": 188.95556825849542,
+    "altitude_asl_m": 601.0246774755982,
+    "true_position": [
+      2680573.0248640645,
+      1261864.6292205
+    ],
+    "relief_shift_m": 35.42552447435446,
+    "cross_ray_residual_m": -1.4435535089252767,
+    "motion_scan_speed_ratio": [
+      -0.5663985383984017,
+      0.5892473898267161
+    ],
+    "same_instant_separation_m": 272.4803542535741,
+    "corrected_shadow_azimuth_deg": 337.77930337903166
+  },
+  "reference_45_2_fov_sensitivity": {
+    "height_m": 190.35101117275337,
+    "altitude_asl_m": 602.4705446766832,
+    "true_position": [
+      2680573.0248640645,
+      1261863.110871527
+    ],
+    "relief_shift_m": 33.90717550157569,
+    "cross_ray_residual_m": -1.0255877038353702,
+    "motion_scan_speed_ratio": [
+      -0.5721767326494777,
+      0.5975496168513531
+    ],
+    "same_instant_separation_m": 274.53562735968563,
+    "corrected_shadow_azimuth_deg": 337.8688064934604
+  },
+  "sensitivity": {
+    "draws": 10000,
+    "invalid_draws": 0,
+    "median_m": 188.84627520383856,
+    "sd_m": 5.24092298334165,
+    "percentiles_2_5_16_84_97_5_m": [
+      179.20978504169977,
+      183.72112768831093,
+      194.082620098615,
+      199.77865594901454
+    ],
+    "cross_residual_2_5_50_97_5_m": [
+      -13.70797278577412,
+      -1.2032484298639332,
+      10.941318977125192
+    ],
+    "interpretation": "Conditional sensitivity distribution under the stated assumptions; not externally calibrated accuracy or a guaranteed height interval."
+  },
+  "assumptions": [
+    "Both visible objects belong to the same flight strip; exact mosaic source pixel is unverified.",
+    "Aircraft body, opposite wingtips and motion can be treated as a horizontal rigid planform; drift sensitivity is \u00b15 degrees.",
+    "Manual image landmarks have 0.5 m one-sigma coordinate perturbations; aircraft centroid 1 m, shadow centroid 2 m.",
+    "Unknown exposure time is sampled uniformly over 10:19\u201310:32 UTC, bounded by consecutive strip start times.",
+    "Camera-model sensitivity adds 75 m altitude and 6 m nadir-track standard deviations beyond the footprint bootstrap.",
+    "Camera tilt \u00b10.5 degrees; terrain perturbations 0.7\u20131 m. Banking, vertical motion and source-mosaic errors are not fully reconstructed."
+  ],
+  "validation_note": "Motion is inferred from aircraft shape, not by forcing the shadow direction. The cross-ray residual is a held-out consistency check, not independent altitude ground truth."
+}

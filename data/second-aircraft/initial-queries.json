@@ -1,0 +1,168 @@
+[
+  {
+    "name": "glider terrain",
+    "url": "https://api3.geo.admin.ch/rest/services/height?easting=2680573.107994411&northing=1261828.454761643&sr=2056",
+    "data": {
+      "height": "413.5"
+    }
+  },
+  {
+    "name": "shadow terrain",
+    "url": "https://api3.geo.admin.ch/rest/services/height?easting=2680509.385944714&northing=1262076.758070081&sr=2056",
+    "data": {
+      "height": "409.5"
+    }
+  },
+  {
+    "name": "ch.swisstopo.images-swissimage-dop10.metadata",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometry=2680573.107994411%2C1261828.454761643&geometryType=esriGeometryPoint&layers=all%3Ach.swisstopo.images-swissimage-dop10.metadata&tolerance=0&sr=2056&returnGeometry=false&lang=en&limit=200",
+    "data": {
+      "results": [
+        {
+          "layerBodId": "ch.swisstopo.images-swissimage-dop10.metadata",
+          "layerName": "Division SWISSIMAGE 10 cm Raster",
+          "featureId": "2680_1261",
+          "id": "2680_1261",
+          "attributes": {
+            "datenstand": "2025",
+            "resolution": "10 cm",
+            "label": "2680_1261"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "ch.swisstopo.lubis-bildstreifen",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometry=2680073.107994411%2C1261328.454761643%2C2681073.107994411%2C1262328.454761643&geometryType=esriGeometryEnvelope&layers=all%3Ach.swisstopo.lubis-bildstreifen&tolerance=0&sr=2056&returnGeometry=false&lang=en&limit=200",
+    "data": {
+      "results": [
+        {
+          "layerBodId": "ch.swisstopo.lubis-bildstreifen",
+          "layerName": "Image strips swisstopo",
+          "featureId": "20250307_1019_12501",
+          "id": "20250307_1019_12501",
+          "attributes": {
+            "source_georef": "1 \u03c3 <= 1 Pixel",
+            "flugdatum": "2025-03-07",
+            "firma": "swisstopo",
+            "filmart": "farbe und infrarot",
+            "bgdi_flugjahr": 2025,
+            "resolution": "0.1",
+            "objectid": 8697,
+            "area": 82868700.0,
+            "gsd": 0.1,
+            "toposhop_length": 43.08,
+            "toposhop_start_x": 2711326,
+            "toposhop_start_y": 1262262,
+            "toposhop_end_x": null,
+            "toposhop_end_y": null,
+            "toposhop_date": "07.03.2025",
+            "goal": "SWISSIMAGE",
+            "label": "2025-03-07"
+          }
+        },
+        {
+          "layerBodId": "ch.swisstopo.lubis-bildstreifen",
+          "layerName": "Image strips swisstopo",
+          "featureId": "20060717_1311_30030",
+          "id": "20060717_1311_30030",
+          "attributes": {
+            "source_georef": "1 \u03c3 <= 1 Pixel",
+            "flugdatum": "2006-07-17",
+            "firma": "swisstopo",
+            "filmart": "farbe und infrarot",
+            "bgdi_flugjahr": 2006,
+            "resolution": "0.25",
+            "objectid": 7428,
+            "area": 253661050.0,
+            "gsd": 0.25,
+            "toposhop_length": 75.85,
+            "toposhop_start_x": 2618341,
+            "toposhop_start_y": 1261544,
+            "toposhop_end_x": null,
+            "toposhop_end_y": null,
+            "toposhop_date": "17.07.2006",
+            "goal": "SWISSIMAGE",
+            "label": "2006-07-17"
+          }
+        },
+        {
+          "layerBodId": "ch.swisstopo.lubis-bildstreifen",
+          "layerName": "Image strips swisstopo",
+          "featureId": "20130605_1026_1308",
+          "id": "20130605_1026_1308",
+          "attributes": {
+            "source_georef": "1 \u03c3 <= 1 Pixel",
+            "flugdatum": "2013-06-05",
+            "firma": "swisstopo",
+            "filmart": "farbe und infrarot",
+            "bgdi_flugjahr": 2013,
+            "resolution": "0.25",
+            "objectid": 2602,
+            "area": 112426637.5,
+            "gsd": 0.25,
+            "toposhop_length": 38.92,
+            "toposhop_start_x": 2691992,
+            "toposhop_start_y": 1261539,
+            "toposhop_end_x": null,
+            "toposhop_end_y": null,
+            "toposhop_date": "05.06.2013",
+            "goal": "TLM",
+            "label": "2013-06-05"
+          }
+        },
+        {
+          "layerBodId": "ch.swisstopo.lubis-bildstreifen",
+          "layerName": "Image strips swisstopo",
+          "featureId": "20160623_1106_1308",
+          "id": "20160623_1106_1308",
+          "attributes": {
+            "source_georef": "1 \u03c3 <= 1 Pixel",
+            "flugdatum": "2016-06-23",
+            "firma": "swisstopo",
+            "filmart": "farbe und infrarot",
+            "bgdi_flugjahr": 2016,
+            "resolution": "0.25",
+            "objectid": 3172,
+            "area": 120437362.5,
+            "gsd": 0.25,
+            "toposhop_length": 39.21,
+            "toposhop_start_x": 2692036,
+            "toposhop_start_y": 1261490,
+            "toposhop_end_x": null,
+            "toposhop_end_y": null,
+            "toposhop_date": "23.06.2016",
+            "goal": "SWISSIMAGE",
+            "label": "2016-06-23"
+          }
+        },
+        {
+          "layerBodId": "ch.swisstopo.lubis-bildstreifen",
+          "layerName": "Image strips swisstopo",
+          "featureId": "20100716_1219_30030",
+          "id": "20100716_1219_30030",
+          "attributes": {
+            "source_georef": "1 \u03c3 <= 1 Pixel",
+            "flugdatum": "2010-07-16",
+            "firma": "swisstopo",
+            "filmart": "farbe und infrarot",
+            "bgdi_flugjahr": 2010,
+            "resolution": "0.25",
+            "objectid": 5856,
+            "area": 118301437.5,
+            "gsd": 0.25,
+            "toposhop_length": 39.17,
+            "toposhop_start_x": 2692068,
+            "toposhop_start_y": 1261497,
+            "toposhop_end_x": null,
+            "toposhop_end_y": null,
+            "toposhop_date": "16.07.2010",
+            "goal": "SWISSIMAGE",
+            "label": "2010-07-16"
+          }
+        }
+      ]
+    }
+  }
+]

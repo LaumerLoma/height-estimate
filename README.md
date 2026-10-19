@@ -42,6 +42,16 @@ The largest remaining uncertainty is where the faint shadow sits along the wing 
   <img alt="Bar chart of the height uncertainty from each source alone (1σ): shadow position 2.6 m, glider airspeed 1.5 m, camera geometry 0.9 m, terrain 0.9 m, exposure time 0.2 m; 3.3 m all together." src="docs/error-budget-light.svg" width="100%">
 </picture>
 
+## Second case: a passenger jet
+
+The same camera-ray, sunlight-ray and scan-motion model was applied to a second aircraft near Zurich airport, in imagery likely acquired on **7 March 2025**. It gives **about 190 m above ground** (sensitivity median 188.8 m; conditional central 95% range 179–200 m). Motion is inferred from the jet's wing and fuselage geometry rather than borrowing the glider's speed.
+
+The sideways shadow mismatch drops from **31.9 m** without corrections to **1.4 m** with camera and motion corrections. This is a held-out consistency check, not independent altitude ground truth. The original narrow exposure-time fit does not transfer reliably to this day's strips; the full time bracket and larger camera uncertainty are retained.
+
+**[Read the second-case analysis](docs/second-aircraft.md)** · [Standalone illustrated HTML](docs/second-aircraft.html)
+
+![Comparison of the two aircraft through the same model stages](docs/second-case-comparison.svg)
+
 ## Contents
 
 | Path | What |
@@ -51,6 +61,9 @@ The largest remaining uncertainty is where the faint shadow sits along the wing 
 | `analysis/fit_camera.py` | Field of view, flight altitude, nadir track and exposure time from strip metadata |
 | `analysis/solve_height.py` | Full geometric model, Monte Carlo and error budget |
 | `analysis/plot_figures.py` | README charts (light and dark SVG) |
+| `analysis/analyze_second_case.py` | Second aircraft geometry, shape-derived motion and uncertainty |
+| `analysis/render_second_case.py` | Second-case report and comparison figures |
+| `data/second-aircraft/` | Cached source imagery, flight/terrain metadata and second-case output |
 | `data/` | Cached strip metadata, strip-edge terrain, local terrain grids, `estimate.json` (solver output) |
 | `glider-height/` | Static browser calculator and tested JavaScript module for the basic formula ([details](glider-height/README.md)) |
 | `docs/` | Banner, README charts and calculator screenshots |
@@ -70,6 +83,6 @@ Requirements are Python 3 with numpy, scipy and Pillow, plus Node.js ≥ 18. The
 
 ## Status
 
-This is a finished one-off case study and is not actively maintained.
+This repository contains the original Isenau case study and a second aircraft consistency test. Both estimates are conditional on their documented imaging and motion assumptions; no independent aircraft altitude telemetry is available.
 
 Imagery, flight metadata and terrain © swisstopo (free use with attribution). The banner and figure crops come from SWISSIMAGE. Code and text are under the [MIT License](LICENSE).

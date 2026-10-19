@@ -1,0 +1,32 @@
+[
+  {
+    "file": "strip.json",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.swisstopo.lubis-bildstreifen/20250307_1019_12501?sr=2056",
+    "bytes": 2848
+  },
+  {
+    "file": "flight.json",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/find?layer=ch.swisstopo.lubis-bildstreifen&searchText=20250307&searchField=id&returnGeometry=false&contains=true",
+    "bytes": 6003
+  },
+  {
+    "file": "shadow-tile.json",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometry=2680509.39%2C1262076.76&geometryType=esriGeometryPoint&layers=all%3Ach.swisstopo.images-swissimage-dop10.metadata&tolerance=0&sr=2056&returnGeometry=false&lang=en",
+    "bytes": 255
+  },
+  {
+    "file": "aircraft.png",
+    "url": "https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ch.swisstopo.swissimage&STYLES=&CRS=EPSG%3A2056&FORMAT=image%2Fpng&BBOX=2680533.11%2C1261788.45%2C2680613.11%2C1261868.45&WIDTH=800&HEIGHT=800",
+    "bytes": 1644443
+  },
+  {
+    "file": "shadow.png",
+    "url": "https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ch.swisstopo.swissimage&STYLES=&CRS=EPSG%3A2056&FORMAT=image%2Fpng&BBOX=2680469.39%2C1262036.76%2C2680549.39%2C1262116.76&WIDTH=800&HEIGHT=800",
+    "bytes": 1616105
+  },
+  {
+    "file": "aircraft-tile.json",
+    "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometry=2680573.107994411%2C1261828.454761643&geometryType=esriGeometryPoint&layers=all%3Ach.swisstopo.images-swissimage-dop10.metadata&tolerance=0&sr=2056&returnGeometry=false&lang=en&limit=200",
+    "bytes": 336
+  }
+]
